@@ -46,18 +46,71 @@ const signup = async (req, res) => {
     console.log(error);
     return res
       .status(400)
-      .json({ message: "Error occurred. Please try again" });
+      .json({ message: "Error occurred. Please try again." });
   }
+};
+
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    // if no user exists
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Either email or password is incorrect." });
+    } else {
+      // a user is found in the database
+      let isMatch = await bcrypt.compare(password, user.password);
+      console.log("Password correct: ", isMatch);
+
+      if (isMatch) {
+        // add one to timesLoggedIn
+        let logs = user.timesLoggedIn + 1;
+        user.timesLoggedIn = logs;
+        const savedUser = await user.save();
+        // create a token payload (object)
+        const payload = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          expiredToken: Date.now(),
+        };
+        try {
+          // if token is generated
+          let token = await jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 }); // token good for an hour
+          let legit = await jwt.verify(token, JWT_SECRET, { expiresIn: 60 }); // has 60 seconds to verify
+          res.json({
+            success: true,
+            token: `Bearer ${token}`,
+            userData: legit,
+          });
+        } catch (error) {
+          console.log("Error inside of isMatch conditional");
+          console.log(error);
+          res
+            .status(400)
+            .json({ message: "Session has ended. Please log in again." });
+        }
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Either email or password is incorrect." });
+      }
+    }
+  } catch (error) {}
 };
 
 // routes
 router.get("/test", test); // run if you hit /api/users/test
 
 // POST api/users/register (Public)
-// router.post('/signup', signup);
+router.post("/signup", signup);
 
 // POST api/users/login (Public)
-// router.post('/login', login);
+router.post("/login", login);
 
 // GET api/users/current (Private)
 // router.get(
