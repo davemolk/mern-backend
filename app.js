@@ -16,6 +16,9 @@ app.use(express.json()); // for parsing json
 
 // Initialize Passport and use config file
 app.use(passport.initialize());
+require("./config/passport")(passport); // shorthand for below
+// const config = require('./config/passport')
+// config(passport);
 
 // Home route
 app.get("/", (req, res) => {
