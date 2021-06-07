@@ -8,10 +8,46 @@ const passport = require("passport");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Models
+const { User } = require("../models");
 
 // controllers
 const test = async (req, res) => {
   res.json({ message: "User endpoint OK!" });
+};
+
+const signup = async (req, res) => {
+  console.log("- - - INSIDE OF SIGNUP - - -");
+  console.log("req.body =>", req.body);
+  const { name, email, password } = req.body;
+  try {
+    // see if a user exists in the db by email and password
+    const user = await User.findOne({ email });
+
+    // if a user exists return 400 error and message
+    if (user) {
+      return res.status(400).json({ message: "Email already exists!" });
+    } else {
+      console.log("Create a new user");
+      let saltRounds = 12;
+      let salt = await bcrypt.genSalt(saltRounds);
+      let hash = await bcrypt.hash(password, salt);
+
+      const newUser = new User({
+        name,
+        email,
+        password: hash,
+      });
+
+      const savedNewUser = await newUser.save();
+      res.json(savedNewUser);
+    }
+  } catch (error) {
+    console.log("Error inside of /api/users/signup");
+    console.log(error);
+    return res
+      .status(400)
+      .json({ message: "Error occurred. Please try again" });
+  }
 };
 
 // routes
