@@ -13,7 +13,7 @@ const options = {
 const JWT_STRATEGY = new Strategy(options, async (jwtPayload, done) => {
   // check for a user by the id
   try {
-    const user = await User.findOne(jwtPayload.id);
+    const user = await User.findById(jwtPayload.id);
     if (user) {
       return done(null, user);
     } else {
